@@ -2,7 +2,13 @@
 
 A stylized room built from independent transparent WebP assets, layered with CSS 3D transforms into a fullscreen parallax scene. Move the mouse to rotate the room a few degrees — near objects sweep faster than far ones. No 3D library, just CSS 3D + one `requestAnimationFrame` loop. Click any interactive object to open a glassmorphism panel with portfolio content.
 
-**Live:** Deployed on Vercel (or any static host) — works from any sub-path thanks to `base: './'`.
+## Live Demo
+
+[View Live Demo](https://not-an-image-4het.vercel.app/)
+
+<p align="center">
+  <img src="./image.png" alt="Hero Scene" width="800"/>
+</p>
 
 ---
 
