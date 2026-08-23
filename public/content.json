@@ -1,0 +1,169 @@
+{
+  "panels": {
+    "person": {
+      "eyebrow": "About Me",
+      "title": "Karthikeyan VR",
+      "subtitle": "Trying to be a Developer",
+      "body": "I'm a Computer Science graduate focused on building modern web applications and exploring AI/ML and Generative AI. I work with React, Java, Python, FastAPI, Spring Boot, and databases to create clean, scalable solutions.",
+      "stats": ["B.E. CSE", "2026 Graduate", "CGPA 8.6 / 10", "Chennai, India"],
+      "footer": "S.A. Engineering College · Anna University",
+      "actions": [
+        ["GitHub", "https://github.com/Karthikn-VR"],
+        ["LinkedIn", "https://www.linkedin.com/in/karthikeyan-vr/"]
+      ]
+    },
+    "corkboard": {
+      "eyebrow": "Certificates",
+      "title": "Learning proof board",
+      "body": "Certificates are loaded from a public GitHub-hosted JSON file, so you can update the list without touching React code.",
+      "certifications": []
+    },
+    "clock": {
+      "eyebrow": "Timeline",
+      "title": "Developer journey",
+      "timeline": [
+        ["2022", "Started B.E. Computer Science and Engineering."],
+        ["2024", "Built stronger foundations in frontend, backend, databases, and APIs."],
+        ["2025", "Expanded into AI/ML, RAG, embeddings, vector databases, and LLM tooling."],
+        ["2026", "Graduating from S.A. Engineering College with 8.6 CGPA."]
+      ]
+    },
+    "frames": {
+      "eyebrow": "Gallery",
+      "title": "A few moods",
+      "body": "Small visual moments from the character set.",
+      "images": [
+         ["assets/Me/MeBeige.jpeg", "Hello pose"],
+        ["assets/Me/Mirror.png", "Ideas pose"],
+        ["assets/Me/MyImage.png", "Sunglasses pose"]
+      ]
+    },
+    "bookshelf": {
+      "eyebrow": "Skills & Stack",
+      "title": "Full-stack + AI toolkit",
+      "featured": ["React", "Java", "Python", "FastAPI", "Spring Boot", "RAG / LLMs"],
+      "groups": [
+        ["Frontend", ["HTML5", "CSS3", "JavaScript", "React.js", "Bootstrap 5"]],
+        ["Backend", ["Java", "Python", "FastAPI", "Flask", "Node.js", "REST APIs", "JWT Authentication"]],
+        ["Databases", ["MySQL", "SQLite", "MongoDB", "Firebase"]],
+        ["AI / ML / GenAI", ["Machine Learning", "Generative AI", "LLMs", "Embeddings", "Vector Databases", "RAG", "Transformers"]],
+        ["Tools", ["Git", "GitHub", "VS Code", "Postman", "Docker",  "Figma", "Canva"]]
+      ]
+    },
+    "laptop": {
+      "eyebrow": "Projects",
+      "title": "Recent GitHub work",
+      "body": "GitHub bio: Software Engineer building AI-powered systems, scalable backends, and modern full-stack applications.",
+      "projects": [
+        ["CS-50-Ai-my-projects", "Python · AI projects covering search, logic, ML, neural networks, and NLP.", "https://github.com/Karthikn-VR/CS-50-Ai-my-projects"],
+        ["Pdf-RAG-system", "Python · Chat with PDF documents using FastAPI, React, Ollama, and vector search.", "https://github.com/Karthikn-VR/Pdf-RAG-system"],
+        ["Coffee-Shop", "JavaScript · Full-stack coffee builder with React, Framer Motion, FastAPI, and MySQL.", "https://github.com/Karthikn-VR/Coffee-Shop"],
+        ["CinimaVibe-MovieWebsite", "JavaScript · React movie browsing app with categorized exploration and pagination.", "https://github.com/Karthikn-VR/CinimaVibe-MovieWebsite"]
+      ],
+      "footer": "GitHub: Karthikn-VR · 59 public repositories",
+      "actions": [["View GitHub", "https://github.com/Karthikn-VR"]]
+    },
+    "usb": {
+      "eyebrow": "Resume",
+      "title": "Resume download",
+      "body": "Download a lightweight resume summary with education, skills, interests, GitHub, and LinkedIn details.",
+      "actions": [["Download Resume", "Karthikeyan_VR_Resume_DS.pdf", true]]
+    },
+    "phone": {
+      "eyebrow": "Contact",
+      "title": "Let's connect",
+      "body": "Based in Chennai, Tamil Nadu, India. Open to software engineering, full-stack, AI/ML, Generative AI, and web development opportunities.",
+      "links": [
+        ["LinkedIn", "linkedin.com/in/karthikeyan-vr", "https://www.linkedin.com/in/karthikeyan-vr/"],
+        ["GitHub", "github.com/Karthikn-VR", "https://github.com/Karthikn-VR"],
+        ["Email", "Available on request through LinkedIn", "https://www.linkedin.com/in/karthikeyan-vr/"]
+      ],
+      "actions": [
+        ["Open LinkedIn", "https://www.linkedin.com/in/karthikeyan-vr/"],
+        ["Open GitHub", "https://github.com/Karthikn-VR"]
+      ]
+    },
+
+    "cat": {
+      "eyebrow": "The Real Boss",
+      "title": "Meet Mr. Winks",
+      "subtitle": "Chief Napping Officer",
+      "body": "Mr. Winks has one job: sit there, look cute, and somehow make everyone else feel like they're working for him. He contributes absolutely nothing to the project and still expects credit.",
+      "stats": ["Professional Napper", "Zero Meetings Attended", "Keyboard Inspector", "CEO of Doing Nothing"]
+    },
+
+    "guitar": {
+      "eyebrow": "Off the Clock",
+      "title": "Hobbies & Vibes",
+      "body": "Not everything here has to be productive. Sometimes something just looks cool, feels nice, or gives me an excuse to say I have hobbies.",
+      "highlights": [
+        "I do not know how to play guitar... yet",
+        "Added the guitar because it looked cool",
+        "Collecting ideas I may or may not build",
+        "Staring at the screen and calling it thinking",
+        "Exploring new coffee shops around Chennai",
+        "Watching sci-fi movies and overthinking everything",
+        "Saying \"I will do it tomorrow\" with confidence"
+      ]
+    },
+
+    "lamp": {
+      "eyebrow": "Lightbulb Moments",
+      "title": "Ideas & Thoughts",
+      "body": "Random thoughts that arrive at the worst possible time and somehow feel like a million-dollar idea at 3 AM.",
+      "clouds": [
+        "What if I actually finish this idea?",
+        "Build something just because it looks cool",
+        "Could this be automated?",
+        "A coffee machine that knows when I'm tired",
+        "Teach a cat to do absolutely nothing",
+        "Maybe CSS is not the enemy",
+        "Every room looks better with warm lights",
+        "Sleep can wait, this idea is important"
+      ]
+    },
+
+    "pencils": {
+      "eyebrow": "Doodle Zone",
+      "title": "Sketches & Scribbles",
+      "body": "Some ideas deserve a proper plan. Others deserve a pencil, a random piece of paper, and absolutely no idea where they're going.",
+      "highlights": [
+        "UI ideas drawn instead of actually designed",
+        "One masterpiece, seventeen questionable doodles",
+        "Flowcharts that somehow lead nowhere",
+        "Random characters that became surprisingly important",
+        "Great ideas discovered three minutes before sleep"
+      ]
+    },
+
+    "books": {
+      "eyebrow": "Page Turners",
+      "title": "Reading List",
+      "body": "A collection of books I either genuinely enjoyed, learned from, or confidently pretend I have finished.",
+      "highlights": [
+        "Twisted Love — Ana Huang (apparently I enjoy chaos)",
+        "Atomic Habits — James Clear (still working on the habits part)",
+        "Clean Code — Robert C. Martin (read it, then wrote questionable code anyway)",
+        "The Pragmatic Programmer — Hunt & Thomas (trying to become more pragmatic)",
+        "Designing Data-Intensive Applications — Martin Kleppmann (light bedtime reading, obviously)",
+        "It Ends with Us — Colleen Hoover (emotional damage included)",
+        "The Alchemist — Paulo Coelho (still looking for my personal legend)"
+      ]
+    },
+
+    "coffee": {
+      "eyebrow": "Fuel Station",
+      "title": "Coffee Break",
+      "subtitle": "Just one more cup. Probably.",
+      "body": "Some people meditate, some people take long walks. I drink coffee and pretend I have my life together. Somehow, it works.",
+      "stats": ["Filter Kaapi Enthusiast", "3 Cups / Day Minimum", "Good Mood Fuel", "Better Ideas, Somehow"]
+    },
+
+    "headphones": {
+      "eyebrow": "Vibe Check",
+      "title": "Music & Focus",
+      "body": "Sometimes the best way to focus is to put on headphones, disappear from the world for a while, and pretend the outside world does not exist.",
+      "stats": ["Lo-Fi & Chill", "Rainy Day Vibes", "Songs on Repeat"]
+    }
+  }
+}

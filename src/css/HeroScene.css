@@ -1,0 +1,1302 @@
+.page {
+  height: 100vh;
+  height: 100dvh;
+  background: #3c4248;
+}
+
+/* ================= the fullscreen stage =================
+   The page IS the room. .hero is the viewport. .hero__scene is the 16:10
+   room box, scaled to CONTAIN (the room is never cropped and never
+   stretched). On aspects wider/taller than 16:10 the room shell (wall and
+   floor - seamless CSS gradients) extends past the room box to fill the
+   rest of the screen, so the whole viewport is always "inside the room":
+     wide screen  -> more wall on the sides
+     tall screen  -> more wall above, more floor below
+   The extension is driven by useParallaxRig via --ext-x / --ext-y (px). */
+
+.hero {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #3c4248;
+  touch-action: none;
+  /* 3D rig, in design-grid units (1600 x 1000). --u (px per design unit)
+     and the shell extension are written by useParallaxRig on resize. */
+  --P: 1000;
+  --u: 1;
+  --ext-x: 0px;
+  --ext-y: 0px;
+  /* wall / floor ramp stops, re-based by JS to the extended box */
+  --wall-s0: 5.7%;
+  --wall-s45: 57.5%;
+  --wall-s100: 100%;
+  --floor-s0: 0%;
+  --floor-s45: 38.9%;
+  --floor-s100: 86.4%;
+}
+
+.hero__scene {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(100vw, 160vh);
+  height: min(62.5vw, 100vh);
+  height: min(62.5vw, 100dvh);
+  transform: translate(-50%, -50%);
+  /* hover glow for focus-visible - thin contour + soft glow, safe in preserve-3d */
+  --hover-outline: drop-shadow(0 0 1px rgba(255, 255, 255, 0.95))
+    drop-shadow(0 0 5px rgba(255, 255, 255, 0.45));
+}
+
+/* The perspective camera: P design units in front of the original artwork
+   plane (z = 0), looking at the stage center. All depth offsets flow
+   through this, so the room's proportions are identical at every size. */
+.hero__parallax {
+  position: absolute;
+  inset: 0;
+  perspective: calc(var(--P) * var(--u) * 1px);
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
+}
+
+/* The room: one unit that rotates toward the pointer (written per frame by
+   useParallaxRig.js - a single transform, no React re-renders). */
+.hero__room {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform: rotateY(0deg) rotateX(0deg);
+  will-change: transform;
+}
+
+/* A depth plane. translateZ pushes it to its `depth` design units; the
+   scale() is the inverse perspective compensation (P/(P-d) * (P-d)/P = 1),
+   applied around the stage center (transform-origin is set per plane in
+   JS), so at the RESTING pose every plane projects to exactly the pixels
+   of the flat artwork. Only the camera move reveals the depth: near planes
+   sweep far, far planes sweep little, plus a real perspective scale. */
+.depth {
+  position: absolute;
+  visibility: hidden; /* until JS pins this plane's transform-origin */
+  transform: translateZ(calc(var(--d) * var(--u) * 1px))
+    scale(calc((var(--P) - var(--d)) / var(--P)));
+  transform-origin: 50% 50%;
+}
+
+.depth.is-ready {
+  visibility: visible;
+}
+
+/* The room shell is one full-stage plane. Its boxes extend past the stage
+   (10% / 6% overscan plus the viewport fill-in) so the back wall's
+   parallax sweep never uncovers a gap. */
+.depth--shell {
+  visibility: visible;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ================= the room shell (inside the shell plane) ================= */
+
+.room__wall,
+.room__floor,
+.room__baseboard,
+.room__lamplight {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* 10% / 6% overscan + the viewport fill-in (--ext-x / --ext-y). The wall
+   box is 1888 x 1060 design units at the default extension; gradient
+   geometry is expressed in px (x --u) so it stays pinned to the room no
+   matter how far the box extends. */
+.room__wall {
+  left: calc(-10% - var(--ext-x));
+  right: calc(-10% - var(--ext-x));
+  top: calc(-6% - var(--ext-y));
+  bottom: 0;
+  background:
+    /* soft shade near the top of the wall, for gentle depth */
+    linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0, rgba(0, 0, 0, 0) calc(260px * var(--u))),
+    /* soft neutral ambient, pinned to the lamp side (640 x 480 design units) */
+    radial-gradient(
+        calc(1440px * var(--u)) calc(700px * var(--u)) at calc(640px * var(--u) + var(--ext-x))
+          calc(480px * var(--u) + var(--ext-y)),
+        rgba(255, 255, 255, 0.08),
+        rgba(255, 255, 255, 0) 60%
+      ),
+    /* dark grey wall, deepening softly toward the floor */
+    linear-gradient(
+        180deg,
+        #4e545a var(--wall-s0),
+        #3c4248 var(--wall-s45),
+        #2a2f34 var(--wall-s100)
+      );
+}
+
+/* `top` is set inline (FLOOR_LINE %); the floor extends 6% below the stage
+   plus the viewport fill-in. The box's top edge IS the wall/floor seam. */
+.room__floor {
+  left: calc(-10% - var(--ext-x));
+  right: calc(-10% - var(--ext-x));
+  bottom: calc(-6% - var(--ext-y));
+  background:
+    /* ambient-occlusion seam where wall meets floor */
+    linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0, rgba(0, 0, 0, 0) calc(38px * var(--u))),
+    /* warm lamp spill onto the carpet */
+    radial-gradient(
+        calc(960px * var(--u)) calc(342px * var(--u)) at calc(640px * var(--u) + var(--ext-x)) 0,
+        rgba(255, 186, 112, 0.1),
+        rgba(255, 186, 112, 0) 70%
+      ),
+    /* soft carpet weave (very faint vertical pile) */
+    repeating-linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.03) 0,
+        rgba(255, 255, 255, 0.03) 2px,
+        rgba(0, 0, 0, 0.03) 2px,
+        rgba(0, 0, 0, 0.03) 4px
+      ),
+    /* warm taupe carpet */
+    linear-gradient(
+        180deg,
+        #cfc4ae var(--floor-s0),
+        #bfb29a var(--floor-s45),
+        #a89a80 var(--floor-s100)
+      );
+}
+
+.room__baseboard {
+  left: calc(-10% - var(--ext-x));
+  right: calc(-10% - var(--ext-x));
+  height: 1.4%;
+  background: linear-gradient(180deg, #585e64 0%, #2f343a 100%);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* Warm pool of light thrown by the desk lamp. Plain alpha on purpose: a
+   mix-blend-mode element inside a preserve-3d context would be flattened
+   and blended against transparency, killing the glow. */
+.room__lamplight {
+  left: 6%;
+  right: 22%;
+  top: 18%;
+  bottom: 8%;
+  background: radial-gradient(
+    45% 45% at 34% 52%,
+    rgba(255, 194, 122, 0.12),
+    rgba(255, 194, 122, 0) 70%
+  );
+}
+
+/* ================= objects ================= */
+
+.layer-plane {
+  transform-style: preserve-3d;
+  isolation: isolate;
+}
+
+.layer__ground-shadow {
+  position: absolute;
+  left: var(--gs-left, 50%);
+  bottom: var(--gs-bottom, 0%);
+  width: var(--gs-width, 70%);
+  height: var(--gs-height, 10%);
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0.46) 0%,
+    rgba(0, 0, 0, 0.24) 42%,
+    rgba(0, 0, 0, 0) 74%
+  );
+  filter: blur(calc(5px * var(--u)));
+  opacity: var(--gs-opacity, 0.24);
+  pointer-events: none;
+}
+
+.layer {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: auto; /* height follows each PNG's own aspect ratio */
+  user-select: none;
+  -webkit-user-drag: none;
+  /* hit-testing happens on the stage against each asset's alpha channel,
+     so the images themselves never intercept the pointer */
+  pointer-events: none;
+  /* Prevent drop-shadow filter from creating white fog artifacts
+     in the preserve-3d context */
+  will-change: filter;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Focus visible for keyboard navigation - thin contour + glow + brightness */
+.layer-plane:focus-visible {
+  outline: none;
+}
+
+.layer-plane:focus-visible .layer {
+  filter: var(--hover-outline) brightness(1.1);
+}
+
+/* ================= flat overlay (above the 3D) =================
+   Hover label and status sit OUTSIDE the 3D context: they are
+   camera-lens effects, so they never parallax. The stage-sized overlay
+   keeps them in room coordinates. The vignette lives on .hero instead,
+   because it must cover the whole viewport, not just the room box. */
+
+.hero__overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hero__vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 45%, rgba(0, 0, 0, 0) 62%, rgba(0, 0, 0, 0.3) 100%);
+}
+
+.hero__glass-panel {
+  position: absolute;
+  z-index: 60;
+  left: 5%;
+  top: 12%;
+  width: min(52%, 720px);
+  min-height: 46%;
+  max-height: 68%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: clamp(18px, 2.1vw, 30px);
+  border-radius: clamp(18px, 2.4vw, 34px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(24, 27, 32, 0.88);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    0 24px 70px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+  color: #E2E8F0;
+  pointer-events: none;
+  animation: glass-panel-in 160ms ease-out both;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.hero__glass-panel::-webkit-scrollbar {
+  width: 5px;
+}
+
+.hero__glass-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hero__glass-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 99px;
+}
+
+.hero__glass-panel.is-exiting {
+  pointer-events: none;
+  animation: glass-panel-out 260ms ease-in both;
+}
+
+.hero__glass-panel--phone.is-exiting,
+.hero__glass-panel--modal.is-exiting {
+  animation-name: glass-panel-center-out;
+}
+
+.hero__glass-panel::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background: radial-gradient(
+    80% 60% at 12% 8%,
+    rgba(125, 211, 252, 0.08),
+    rgba(255, 255, 255, 0) 62%
+  );
+  pointer-events: none;
+}
+
+.hero__glass-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.hero__glass-panel--person {
+  left: 5%;
+  right: auto;
+  top: 12%;
+}
+
+.hero__glass-panel--bookshelf {
+  left: 5%;
+  right: auto;
+  top: 8%;
+  width: min(58%, 820px);
+  max-height: 78%;
+}
+
+.hero__glass-panel--laptop {
+  left: auto;
+  right: 5%;
+  top: 10%;
+  width: min(45%, 640px);
+  pointer-events: auto;
+}
+
+/* All compact/modal panels need pointer-events for close button */
+.hero__glass-panel--person,
+.hero__glass-panel--bookshelf,
+.hero__glass-panel--laptop,
+.hero__glass-panel--frames,
+.hero__glass-panel--phone,
+.hero__glass-panel--corkboard,
+.hero__glass-panel--clock,
+.hero__glass-panel--usb,
+.hero__glass-panel--headphones,
+.hero__glass-panel--lamp,
+.hero__glass-panel--plant,
+.hero__glass-panel--books,
+.hero__glass-panel--coffee,
+.hero__glass-panel--pencils,
+.hero__glass-panel--cat,
+.hero__glass-panel--guitar,
+.hero__glass-panel--floorplant,
+.hero__glass-panel--compact,
+.hero__glass-panel--modal {
+  pointer-events: auto;
+}
+
+/* Compact modal is a child of .hero (full viewport), not the 16:10 scene.
+   Viewport units keep it tall enough to read on every screen size.
+   touch-action: pan-y overrides .hero { touch-action: none } so the
+   panel can still scroll on phones. */
+.hero__glass-panel--compact,
+.hero__glass-panel--modal {
+  left: 5%;
+  right: auto;
+  top: 10%;
+  bottom: auto;
+  width: min(52vw, 720px);
+  min-height: min(42vh, 360px);
+  max-height: min(72vh, 72dvh);
+  z-index: 120;
+  touch-action: pan-y;
+}
+
+.hero__glass-panel--frames {
+  left: 5%;
+  right: auto;
+  top: 10%;
+  width: min(48%, 680px);
+  min-height: 42%;
+}
+
+.hero__glass-panel--phone {
+  left: 50%;
+  right: auto;
+  top: 10%;
+  width: min(46%, 640px);
+  min-height: 38%;
+  transform: translateX(-50%);
+  animation-name: glass-panel-center-in;
+}
+
+/* Close button for compact panels (modal) */
+.glass__close {
+  position: absolute;
+  z-index: 10;
+  right: 12px;
+  top: 10px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #F5F5F4;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  pointer-events: auto;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.glass__close:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Ensure close button works even when panel has pointer-events: none */
+.hero__glass-panel--modal {
+  pointer-events: auto;
+}
+
+.hero__glass-panel--modal > * {
+  pointer-events: auto;
+}
+
+.glass__eyebrow {
+  margin: 0 0 0.55rem;
+  color: #7DD3FC;
+  font-size: clamp(10px, 0.9vw, 13px);
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.glass__title {
+  margin: 0;
+  color: #F5F5F4;
+  font-size: clamp(24px, 3.1vw, 46px);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+}
+
+.glass__subtitle {
+  margin: 0.55rem 0 0;
+  color: #CBD5E1;
+  font-size: clamp(13px, 1.35vw, 19px);
+  font-weight: 700;
+}
+
+.glass__body {
+  margin: 1rem 0 0;
+  max-width: 58ch;
+  color: #E2E8F0;
+  font-size: clamp(12px, 1.05vw, 16px);
+  line-height: 1.55;
+}
+
+.glass__stats,
+.glass__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.glass__stats {
+  margin-top: 1.1rem;
+}
+
+.glass__stats span,
+.glass__chips span {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #E2E8F0;
+  font-size: clamp(10px, 0.82vw, 12px);
+  font-weight: 700;
+  padding: 0.34rem 0.6rem;
+}
+
+.glass__skill-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.7rem, 1vw, 1rem);
+  margin-top: 1rem;
+}
+
+.glass__skill-group h3,
+.glass__project h3 {
+  margin: 0 0 0.42rem;
+  color: #CBD5E1;
+  font-size: clamp(12px, 1vw, 15px);
+}
+
+.hero__glass-panel--person {
+  left: 3%;
+  right: auto;
+  top: auto;
+  bottom: 15%;
+  width: min(42%, 560px);
+  min-height: 34%;
+  max-height: 46%;
+}
+
+.glass__gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.65rem, 1vw, 1rem);
+  margin-top: 1rem;
+}
+
+.glass__gallery-card {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  aspect-ratio: 3 / 4;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.glass__gallery-card img {
+  width: 116%;
+  height: 116%;
+  object-fit: contain;
+  object-position: bottom center;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.glass__projects,
+.glass__links {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.glass__project,
+.glass__links div {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.75rem 0.85rem;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.glass__project:hover,
+.glass__links div:hover {
+  border-color: rgba(125, 211, 252, 0.3);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.glass__project p,
+.glass__links span,
+.glass__footer {
+  margin: 0;
+  color: #94A3B8;
+  font-size: clamp(11px, 0.95vw, 14px);
+  line-height: 1.42;
+}
+
+.glass__links strong {
+  display: block;
+  color: #F5F5F4;
+  font-size: clamp(12px, 1vw, 15px);
+  margin-bottom: 0.16rem;
+}
+
+.glass__link-value {
+  color: #7DD3FC;
+  text-decoration: none;
+  font-size: clamp(11px, 0.95vw, 14px);
+  font-weight: 600;
+  transition: color 0.15s;
+}
+
+.glass__link-value:hover {
+  color: #bae6fd;
+  text-decoration: underline;
+}
+
+.glass__footer {
+  margin-top: 1rem;
+  color: #7DD3FC;
+  font-weight: 700;
+}
+
+@keyframes glass-panel-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+}
+
+@keyframes glass-panel-center-out {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px) scale(0.98);
+  }
+}
+
+@keyframes glass-panel-center-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes glass-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.hero__music-player {
+  position: absolute;
+  z-index: 75;
+  left: 50%;
+  bottom: 4%;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: min(380px, 72%);
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.075));
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(16px) saturate(1.22);
+  -webkit-backdrop-filter: blur(16px) saturate(1.22);
+  color: #fff;
+  pointer-events: auto;
+  transform: translateX(-50%);
+  animation: music-player-in 160ms ease-out both;
+}
+
+.music__visualizer {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  width: 34px;
+  height: 30px;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.music__visualizer span {
+  width: 3px;
+  height: 11px;
+  border-radius: 999px;
+  background: #b3e5ff;
+  animation: music-bar 780ms ease-in-out infinite;
+}
+
+.music__visualizer span:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.music__visualizer span:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+.music__visualizer span:nth-child(4) {
+  animation-delay: 360ms;
+}
+
+.music__title,
+.music__meta {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.music__title {
+  font-size: clamp(12px, 1vw, 15px);
+  font-weight: 800;
+}
+
+.music__meta {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: clamp(10px, 0.82vw, 12px);
+}
+
+.hero__music-player button {
+  margin-left: auto;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0.48rem 0.8rem;
+}
+
+@keyframes music-player-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes music-bar {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+  }
+  50% {
+    transform: scaleY(1.25);
+  }
+}
+
+/* ---------------- hover label ---------------- */
+
+.hero__status {
+  position: absolute;
+  z-index: 80;
+  left: 12px;
+  top: 12px;
+  padding: 0.3em 0.7em;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+  pointer-events: none;
+}
+
+.hero__label {
+  position: absolute;
+  z-index: 70;
+  transform: translate(-50%, -140%);
+  padding: 0.35em 0.85em;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(12, 12, 26, 0.82);
+  color: #fff;
+  font-size: clamp(11px, 1.05vw, 15px);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+/* Responsiveness: the room keeps ONE fixed 16:10 ratio at every
+   breakpoint, so it scales as one unit and objects stay planted. The room
+   is never cropped; the shell fills any leftover space. Parallax
+   intensity is additionally scaled down on small screens by
+   useParallaxRig (and disabled entirely for prefers-reduced-motion). */
+
+/* ================= portfolio polish additions ================= */
+
+.hero__intro {
+  position: absolute;
+  z-index: 65;
+  left: clamp(16px, 3vw, 44px);
+  top: clamp(16px, 3vw, 42px);
+  display: grid;
+  gap: 0.22rem;
+  max-width: min(420px, 46vw);
+  color: #fff;
+  pointer-events: none;
+  text-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  animation: intro-fade 720ms ease-out both;
+}
+
+.hero__intro span {
+  width: 22ch;
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid rgba(179, 229, 255, 0.95);
+  font-size: clamp(18px, 2vw, 32px);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  animation:
+    typing 1.35s steps(22) 260ms both,
+    caret 780ms step-end infinite;
+}
+
+.hero__intro strong {
+  color: rgba(255, 255, 255, 0.74);
+  font-size: clamp(11px, 1vw, 15px);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hero__time-display {
+  position: absolute;
+  z-index: 95;
+  right: clamp(12px, 2vw, 28px);
+  top: clamp(12px, 2vw, 26px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.88);
+  font: inherit;
+  display: grid;
+  gap: 0.05rem;
+  min-width: 82px;
+  padding: 0.5rem 0.85rem;
+  text-align: center;
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+}
+
+/* Credential & action buttons styling */
+.glass__actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.glass__cred-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+
+.glass__cred-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.glass__action {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  background: linear-gradient(180deg, rgba(125,211,252,0.06), rgba(125,211,252,0.03));
+  color: #7DD3FC;
+  font-weight: 800;
+  font-size: 13px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  pointer-events: auto;
+}
+
+.glass__action:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(34, 211, 255, 0.06), 0 2px 6px rgba(0,0,0,0.28);
+  background: linear-gradient(180deg, rgba(125,211,252,0.12), rgba(125,211,252,0.04));
+}
+
+.glass__action:active,
+.glass__cred-btn:active {
+  transform: translateY(0);
+}
+
+.glass__cred-btn {
+  border-radius: 10px;
+}
+
+.glass__action svg {
+  width: 14px;
+  height: 14px;
+}
+
+.hero__time-display span {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.hero__time-display small {
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ---- idea clouds ---- */
+.glass__clouds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.glass__cloud {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #CBD5E1;
+  font-weight: 600;
+  padding: 0.38rem 0.72rem;
+  font-size: clamp(11px, 0.9vw, 13px);
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.glass__cloud:hover {
+  border-color: rgba(125, 211, 252, 0.35);
+  color: #7DD3FC;
+}
+
+/* Vary sizes for a cloud-like feel */
+.glass__cloud--0 { font-size: clamp(12px, 1vw, 15px); font-weight: 800; }
+.glass__cloud--1 { font-size: clamp(10px, 0.82vw, 12px); }
+.glass__cloud--2 { font-size: clamp(13px, 1.1vw, 16px); font-weight: 800; }
+.glass__cloud--3 { font-size: clamp(10px, 0.78vw, 11px); }
+
+.glass__featured {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.48rem;
+  margin-top: 0.9rem;
+}
+
+.glass__featured span {
+  border-radius: 999px;
+  background: rgba(125, 211, 252, 0.12);
+  border: 1px solid rgba(125, 211, 252, 0.28);
+  color: #7DD3FC;
+  font-size: clamp(11px, 0.95vw, 14px);
+  font-weight: 900;
+  padding: 0.42rem 0.7rem;
+}
+
+.glass__certifications {
+  display: grid;
+  gap: 0.72rem;
+  margin-top: 1rem;
+}
+
+.glass__certificate {
+  display: grid;
+  gap: 0.36rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.78rem 0.9rem;
+}
+
+.glass__certificate h3 {
+  margin: 0;
+  color: #F5F5F4;
+  font-size: clamp(12px, 1vw, 15px);
+}
+
+.glass__certificate p,
+.glass__certificate span {
+  margin: 0;
+  color: #94A3B8;
+  font-size: clamp(10px, 0.88vw, 13px);
+  line-height: 1.36;
+}
+
+.glass__certificate span {
+  color: #7DD3FC;
+  font-weight: 700;
+}
+
+.glass__highlights {
+  display: grid;
+  gap: 0.55rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.glass__highlights li {
+  position: relative;
+  padding-left: 1rem;
+  color: #E2E8F0;
+  font-size: clamp(12px, 1vw, 15px);
+  line-height: 1.4;
+}
+
+.glass__highlights li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #7DD3FC;
+}
+
+.glass__timeline {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.glass__timeline section {
+  display: grid;
+  grid-template-columns: 4.2rem 1fr;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.glass__timeline strong {
+  color: #7DD3FC;
+  font-size: clamp(13px, 1.1vw, 16px);
+}
+
+.glass__timeline p {
+  margin: 0;
+  color: #CBD5E1;
+  font-size: clamp(11px, 0.95vw, 14px);
+  line-height: 1.42;
+}
+
+.glass__project span {
+  display: block;
+  margin-top: 0.4rem;
+  color: #7DD3FC;
+  font-size: clamp(10px, 0.82vw, 12px);
+  font-weight: 700;
+}
+
+.glass__project a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  color: #7DD3FC;
+  font-size: clamp(11px, 0.88vw, 13px);
+  font-weight: 800;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.glass__project a:hover {
+  color: #bae6fd;
+  text-decoration: underline;
+}
+
+.detail {
+  position: fixed;
+  z-index: 140;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 3vw, 44px);
+}
+
+.detail__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(7, 10, 16, 0.58);
+  cursor: pointer;
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+.detail__card {
+  position: relative;
+  width: min(980px, 94vw);
+  max-height: min(82vh, 760px);
+  overflow: auto;
+  border-radius: 34px;
+  pointer-events: auto;
+}
+
+.detail .hero__glass-panel {
+  position: relative;
+  left: auto;
+  right: auto;
+  top: auto;
+  width: 100%;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  transform: none;
+  animation: modal-in 180ms ease-out both;
+}
+
+.detail__close {
+  position: absolute;
+  z-index: 4;
+  right: 16px;
+  top: 14px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  cursor: pointer;
+  font-size: 25px;
+  line-height: 1;
+}
+
+.detail__actions {
+  position: absolute;
+  z-index: 3;
+  left: clamp(18px, 2.1vw, 30px);
+  right: clamp(18px, 2.1vw, 30px);
+  bottom: clamp(18px, 2.1vw, 30px);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.detail__actions a {
+  border: 1px solid rgba(179, 229, 255, 0.32);
+  border-radius: 999px;
+  background: rgba(179, 229, 255, 0.15);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  padding: 0.65rem 0.95rem;
+  text-decoration: none;
+}
+
+@keyframes intro-fade {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes typing {
+  from {
+    width: 0;
+  }
+}
+
+@keyframes caret {
+  50% {
+    border-color: transparent;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 780px) {
+  .hero__intro {
+    max-width: 68vw;
+  }
+
+  /* Bottom sheet over the full viewport — not the short 16:10 scene box */
+  .hero__glass-panel,
+  .hero__glass-panel--compact,
+  .hero__glass-panel--modal {
+    left: 50% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: max(10px, env(safe-area-inset-bottom, 0px)) !important;
+    width: min(94vw, 620px) !important;
+    min-height: min(48dvh, 48vh);
+    max-height: min(82dvh, 82vh) !important;
+    padding: 16px 16px 18px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    transform: translateX(-50%);
+    animation-name: glass-panel-center-in;
+    border-radius: 22px;
+    z-index: 120;
+  }
+
+  .hero__glass-panel.is-exiting,
+  .hero__glass-panel--modal.is-exiting {
+    animation-name: glass-panel-center-out;
+  }
+
+  .glass__close {
+    width: 36px;
+    height: 36px;
+    right: 10px;
+    top: 10px;
+    font-size: 24px;
+  }
+
+  .glass__title {
+    font-size: clamp(20px, 5.5vw, 32px);
+    padding-right: 2rem;
+  }
+
+  .glass__body {
+    font-size: clamp(12px, 3.2vw, 15px);
+  }
+
+  .glass__skill-groups {
+    grid-template-columns: 1fr;
+  }
+
+  .glass__gallery {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .glass__project {
+    padding: 0.6rem 0.7rem;
+  }
+
+  .detail__card {
+    width: 96vw;
+    max-height: 84vh;
+  }
+
+  .detail .hero__glass-panel {
+    bottom: auto !important;
+    min-height: 0;
+    max-height: none !important;
+    transform: none;
+  }
+
+  .detail__actions {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    margin: -58px 18px 18px;
+  }
+}
+
+/* Extra-short phones / landscape phones: still prioritize readable height */
+@media (max-width: 780px) and (max-height: 520px) {
+  .hero__glass-panel,
+  .hero__glass-panel--compact,
+  .hero__glass-panel--modal {
+    min-height: min(56dvh, 56vh);
+    max-height: min(88dvh, 88vh) !important;
+    top: 6% !important;
+    bottom: auto !important;
+    transform: translateX(-50%);
+  }
+}
